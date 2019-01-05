@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/main_gradient"
+    android:gravity="center_vertical|center_horizontal"
+    android:orientation="vertical"
+    tools:context=".ui.main.MainFragment">
+
+    <TextView
+        android:id="@+id/usageText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Laddar..."
+        android:textSize="24sp" />
+
+    <android.support.v7.widget.AppCompatButton
+        android:id="@+id/logoutButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="8dp"
+        android:backgroundTint="#6deca0"
+        android:minWidth="128sp"
+        android:minHeight="64sp"
+        android:text="Logga ut"
+        android:textColor="@android:color/white"
+        android:textSize="18sp" />
+</LinearLayout>

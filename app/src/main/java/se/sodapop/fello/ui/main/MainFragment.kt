@@ -1,21 +1,26 @@
 package se.sodapop.fello.ui.main
 
 import android.arch.lifecycle.ViewModelProviders
+import android.content.Context
 import android.os.Bundle
 import android.support.v4.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
-import kotlinx.android.synthetic.main.main_fragment.*
-import okhttp3.logging.HttpLoggingInterceptor
-import se.sodapop.fello.BuildConfig
-import se.sodapop.fello.R
-import android.R.attr.host
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
-import okhttp3.*
+import kotlinx.android.synthetic.main.main_fragment.*
+import okhttp3.Call
+import okhttp3.Callback
+import okhttp3.Response
+import org.jetbrains.anko.doAsync
+import org.jetbrains.anko.support.v4.runOnUiThread
+import se.sodapop.fello.HTTPClient
+import se.sodapop.fello.MainActivity
+import se.sodapop.fello.R
+import se.sodapop.fello.on
 import java.io.IOException
-
 
 class MainFragment : Fragment() {
 
@@ -32,56 +37,28 @@ class MainFragment : Fragment() {
         return inflater.inflate(R.layout.main_fragment, container, false)
     }
 
-    private class MyCookieJar : CookieJar {
-        private val store = HashMap<String, List<Cookie>>()
-
-        override fun saveFromResponse(url: HttpUrl, cookies: MutableList<Cookie>) {
-            store.put(url.host(), cookies);
-        }
-
-        override fun loadForRequest(url: HttpUrl): List<Cookie>? {
-            val cookies = store.get(url.host())
-            return if (cookies != null) cookies else ArrayList()
-        }
-
-    }
-
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
         viewModel = ViewModelProviders.of(this).get(MainViewModel::class.java)
-        // TODO: Use the ViewModel
 
-        val client = OkHttpClient().newBuilder()
-            .cookieJar(MyCookieJar())
-            .addInterceptor(HttpLoggingInterceptor().apply {
-                level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY else HttpLoggingInterceptor.Level.NONE
-            })
-            .build()
+        passwordInput.on(EditorInfo.IME_ACTION_DONE) {
+            loginButton.performClick()
 
-
+            val imm = activity?.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager?
+            imm?.hideSoftInputFromWindow(view?.getWindowToken(), 0)
+        }
 
         loginButton.setOnClickListener {
-            val formBody = FormBody.Builder()
-                .add("username", emailInput.text.toString())
-                .add("password", passwordInput.text.toString())
-                .build()
+            doAsync {
+                val response = HTTPClient.login(emailInput.text.toString(), passwordInput.text.toString()).execute()
+                val responseBody = response.body()?.string()!!
 
-            val request = Request.Builder()
-                .url("https://www.fello.se/wp-admin/admin-post.php?action=login")
-                .post(formBody)
-                .build()
-            client.newCall(request).enqueue(object : Callback {
-                override fun onFailure(call: Call, e: IOException) {
-                    // TODO: java.lang.RuntimeException: Can't toast on a thread that has not called Looper.prepare()
-                    Toast.makeText(activity, "Failure", Toast.LENGTH_SHORT).show()
+                if (responseBody.contains("\"/mina-sidor/\"")) {
+                    runOnUiThread { (activity as MainActivity?)?.loadUsageFragment() }
+                } else if (responseBody.contains("login not found")) {
+                    runOnUiThread { Toast.makeText(activity, "Felaktig inloggning", Toast.LENGTH_SHORT).show() }
                 }
-
-                override fun onResponse(call: Call, response: Response) {
-                    // TODO: java.lang.RuntimeException: Can't toast on a thread that has not called Looper.prepare()
-                    Toast.makeText(activity, "Success", Toast.LENGTH_SHORT).show()
-                }
-
-            })
+            }
         }
     }
 
