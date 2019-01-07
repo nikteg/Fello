@@ -28,40 +28,52 @@ class UsageFragment : Fragment() {
         return inflater.inflate(R.layout.usage_fragment, container, false)
     }
 
+    private fun logoutAndGoToMain() {
+        HTTPClient.logout()
+        (activity as MainActivity?)?.loadMainFragment()
+    }
+
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
         viewModel = ViewModelProviders.of(this).get(MainViewModel::class.java)
 
-        doAsync {
-            HTTPClient.allSubscriptions().execute()
-            val usage = HTTPClient.usage()
-            val data = HTTPClient.data()
-            val (dataLeft, dataTotal) = parseMonthlyUsage(data.monthly)
+        if (savedInstanceState == null) {
+            logoutButton.setOnClickListener {
+                logoutAndGoToMain()
+            }
 
-            runOnUiThread {
-                usageText.text =
-                    """Samtal: ${usage.voicecount} st
+            doAsync {
+                HTTPClient.allSubscriptions().execute()
+                val usage = HTTPClient.usage()
+                val data = HTTPClient.data()
+                val (dataLeft, dataTotal) = parseUsage(data.monthly)
+                val (dataSaved, dataSavedTotal) = parseUsage(data.saved)
+                val dataUsed = (dataTotal * 1000 - dataLeft * 1000) / 1000
+
+                runOnUiThread {
+                    usageText.text =
+                            """Samtal: ${usage.voicecount} st
 Samtalsminuter: ${usage.voiceusage} min
 SMS: ${usage.smsusage} st
 MMS: ${usage.mmscount} st
-Data: ${dataLeft} GB kvar av ${dataTotal} GB"""
+Använd data: ${dataUsed} / ${dataTotal} GB
+Sparad data: ${dataSaved} / ${dataSavedTotal} GB"""
+                }
             }
         }
-
-        logoutButton.setOnClickListener {
-            HTTPClient.logout()
-            (activity as MainActivity?)?.loadMainFragment()
-        }
     }
-
 }
 
-fun parseMonthlyUsage(monthlyHtml: String): Pair<String, String> {
-    val regex = """(\d+,\d+) GB.+(\d+,\d+) GB""".toRegex(RegexOption.MULTILINE)
-    val result = regex.find(monthlyHtml)
+fun parseUsage(html: String): Pair<Double, Double> {
+    val regex = """(\d+,\d+) GB.+?(\d+,\d+) GB""".toRegex(RegexOption.MULTILINE)
+    val result = regex.find(html)
 
     val dataLeft = result?.groupValues?.get(1)
     val dataTotal = result?.groupValues?.get(2)
 
-    return Pair(dataLeft ?: "N/A", dataTotal ?: "N/A")
+    if (dataLeft != null && dataTotal != null) {
+        return Pair(dataLeft.replace(",", ".").toDouble(), dataTotal.replace(",", ".").toDouble())
+    }
+
+    return Pair(.0, .0)
 }

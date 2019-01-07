@@ -1,7 +1,6 @@
 package se.sodapop.fello
 
 import android.content.Context
-import android.util.Log
 import com.franmontiel.persistentcookiejar.ClearableCookieJar
 import com.franmontiel.persistentcookiejar.cache.CookieCache
 import com.franmontiel.persistentcookiejar.cache.SetCookieCache
@@ -10,6 +9,8 @@ import com.franmontiel.persistentcookiejar.persistence.SharedPrefsCookiePersisto
 import com.google.gson.Gson
 import okhttp3.*
 import okhttp3.logging.HttpLoggingInterceptor
+import org.jetbrains.anko.AnkoLogger
+import org.jetbrains.anko.info
 
 // {"invdate":"2019-01-01","voiceusage":8,"voicecount":1,"smsusage":0,"mmscount":0,"datapackage":"2 GB","datausage":"0,00"}
 data class Usage(
@@ -28,10 +29,9 @@ data class Data(
     val saved: String
 )
 
-object HTTPClient {
+object HTTPClient : AnkoLogger {
     lateinit var client: OkHttpClient
-    private lateinit var cookieCache: CookieCache
-    private lateinit var cookieJar: PersistentCookieJar
+    val cookieDomain = "https://www.fello.se"
 
     fun login(email: String, password: String): Call {
         val formBody = FormBody.Builder()
@@ -77,23 +77,31 @@ object HTTPClient {
         return gson.fromJson(response.body()?.string(), Data::class.java)
     }
 
-    fun hasCookieForDomain(domain: String): Boolean {
-        return cookieCache.any { it.domain().equals(domain) }
+    fun hasCookieSet(): Boolean {
+        return client.cookieJar().loadForRequest(HttpUrl.get(cookieDomain)).isNotEmpty()
     }
 
     fun logout() {
-        cookieJar.clear()
+        (client.cookieJar() as ClearableCookieJar).clear()
     }
 
     fun init(context: Context) {
-        cookieCache = SetCookieCache()
-        cookieJar = PersistentCookieJar(cookieCache, SharedPrefsCookiePersistor(context))
         client = OkHttpClient().newBuilder()
-            .cookieJar(cookieJar)
+            .cookieJar(PersistentCookieJar(SetCookieCache(), SharedPrefsCookiePersistor(context)))
             .addInterceptor(HttpLoggingInterceptor().apply {
                 level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY else HttpLoggingInterceptor.Level.NONE
             })
             .build()
+
+        if (BuildConfig.DEBUG) {
+            val cookiesWithExpirationDates = client.cookieJar().loadForRequest(HttpUrl.get(cookieDomain)).map {
+                val time = java.util.Date(it.expiresAt())
+
+                "${it} {$time}"
+            }
+
+            info("Cookies for cookieDomain: ${cookiesWithExpirationDates}")
+        }
     }
 
     /**

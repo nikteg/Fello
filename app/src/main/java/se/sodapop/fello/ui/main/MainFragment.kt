@@ -41,23 +41,29 @@ class MainFragment : Fragment() {
         super.onActivityCreated(savedInstanceState)
         viewModel = ViewModelProviders.of(this).get(MainViewModel::class.java)
 
-        passwordInput.on(EditorInfo.IME_ACTION_DONE) {
-            loginButton.performClick()
+        if (savedInstanceState == null) {
+            loginButton.setOnClickListener {
+                doAsync {
+                    val response = HTTPClient.login(emailInput.text.toString(), passwordInput.text.toString()).execute()
+                    val responseBody = response.body()?.string()!!
 
-            val imm = activity?.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager?
-            imm?.hideSoftInputFromWindow(view?.getWindowToken(), 0)
-        }
-
-        loginButton.setOnClickListener {
-            doAsync {
-                val response = HTTPClient.login(emailInput.text.toString(), passwordInput.text.toString()).execute()
-                val responseBody = response.body()?.string()!!
-
-                if (responseBody.contains("\"/mina-sidor/\"")) {
-                    runOnUiThread { (activity as MainActivity?)?.loadUsageFragment() }
-                } else if (responseBody.contains("login not found")) {
-                    runOnUiThread { Toast.makeText(activity, "Felaktig inloggning", Toast.LENGTH_SHORT).show() }
+                    if (responseBody.contains("\"/mina-sidor/\"")) {
+                        runOnUiThread {
+                            val prefs = activity?.getSharedPreferences("LoginMetadata", Context.MODE_PRIVATE)
+                            prefs?.edit()?.putLong("expiresAt", System.currentTimeMillis() / 1000 + 24 * 60)?.apply() // 24 minutes
+                            (activity as MainActivity?)?.loadUsageFragment()
+                        }
+                    } else if (responseBody.contains("login not found")) {
+                        runOnUiThread { Toast.makeText(activity, "Felaktig inloggning", Toast.LENGTH_SHORT).show() }
+                    }
                 }
+            }
+
+            passwordInput.on(EditorInfo.IME_ACTION_DONE) {
+                loginButton.performClick()
+
+                val imm = activity?.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager?
+                imm?.hideSoftInputFromWindow(view?.getWindowToken(), 0)
             }
         }
     }
