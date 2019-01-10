@@ -1,4 +1,4 @@
-### https://raw.github.com/github/gitignore/18654b47c86bef38add5cd091ec2dac7d6e6e37b/Android.gitignore
+### https://raw.github.com/github/gitignore/f908e51bcf38ae5ede449c55189a7b25d8c507cc/Android.gitignore
 
 # Built application files
 *.apk
@@ -54,7 +54,7 @@ captures/
 .externalNativeBuild
 
 # Google Services (e.g. APIs or Firebase)
-google-services.json
+# google-services.json
 
 # Freeline
 freeline.py
@@ -68,4 +68,14 @@ fastlane/screenshots
 fastlane/test_output
 fastlane/readme.md
 
+# Version control
+vcs.xml
 
+# lint
+lint/intermediates/
+lint/generated/
+lint/outputs/
+lint/tmp/
+# lint/reports/
+
+output.json 
