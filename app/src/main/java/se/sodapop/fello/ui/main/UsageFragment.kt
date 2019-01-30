@@ -1,11 +1,10 @@
 package se.sodapop.fello.ui.main
 
-import android.arch.lifecycle.ViewModelProviders
 import android.os.Bundle
-import android.support.v4.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.fragment.app.Fragment
 import kotlinx.android.synthetic.main.usage_fragment.*
 import org.jetbrains.anko.doAsync
 import org.jetbrains.anko.support.v4.runOnUiThread
@@ -19,7 +18,7 @@ class UsageFragment : Fragment() {
         fun newInstance() = UsageFragment()
     }
 
-    private lateinit var viewModel: MainViewModel
+    private val list = arrayListOf<Pair<String, String>>()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -35,7 +34,9 @@ class UsageFragment : Fragment() {
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
-        viewModel = ViewModelProviders.of(this).get(MainViewModel::class.java)
+
+        val adapter = UsageAdapter(context!!, list)
+        usage_list.adapter = adapter
 
         if (savedInstanceState == null) {
             logoutButton.setOnClickListener {
@@ -51,13 +52,15 @@ class UsageFragment : Fragment() {
                 val dataUsed = (dataTotal * 1000 - dataLeft * 1000) / 1000
 
                 runOnUiThread {
-                    usageText.text =
-                            """Samtal: ${usage.voicecount} st
-Samtalsminuter: ${usage.voiceusage} min
-SMS: ${usage.smsusage} st
-MMS: ${usage.mmscount} st
-Använd data: ${dataUsed} / ${dataTotal} GB
-Sparad data: ${dataSaved} / ${dataSavedTotal} GB"""
+                    list.clear()
+                    list.add(Pair("Samtal", "${usage.voicecount} st"))
+                    list.add(Pair("Samtalsminuter", "${usage.voiceusage} min"))
+                    list.add(Pair("SMS", "${usage.smsusage} st"))
+                    list.add(Pair("MMS", "${usage.mmscount} st"))
+                    list.add(Pair("Använd data", "${dataUsed} / ${dataTotal} GB"))
+                    list.add(Pair("Sparad data", "${dataSaved} / ${dataSavedTotal} GB"))
+
+                    adapter.notifyDataSetChanged();
                 }
             }
         }

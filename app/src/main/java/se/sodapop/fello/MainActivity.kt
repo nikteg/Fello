@@ -1,8 +1,8 @@
 package se.sodapop.fello
 
 import android.content.Context
-import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
+import androidx.appcompat.app.AppCompatActivity
 import org.jetbrains.anko.AnkoLogger
 import org.jetbrains.anko.info
 import se.sodapop.fello.ui.main.MainFragment
@@ -45,7 +45,7 @@ class MainActivity : AppCompatActivity(), AnkoLogger {
 
 }
 
-fun android.support.design.widget.TextInputEditText.on(actionId: Int, func: () -> Unit) {
+fun com.google.android.material.textfield.TextInputEditText.on(actionId: Int, func: () -> Unit) {
     setOnEditorActionListener { _, receivedActionId, _ ->
 
         if (actionId == receivedActionId) {
