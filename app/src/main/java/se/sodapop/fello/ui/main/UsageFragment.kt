@@ -1,5 +1,6 @@
 package se.sodapop.fello.ui.main
 
+import android.content.Context
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -29,6 +30,12 @@ class UsageFragment : Fragment() {
 
     private fun logoutAndGoToMain() {
         HTTPClient.logout()
+
+        val prefs = activity?.getSharedPreferences("LoginMetadata", Context.MODE_PRIVATE)
+        val prefsEditable = prefs?.edit()
+        prefsEditable?.remove("expiresAt")
+        prefsEditable?.apply()
+
         (activity as MainActivity?)?.loadMainFragment()
     }
 
