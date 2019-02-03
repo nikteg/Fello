@@ -38,15 +38,29 @@ class MainFragment : Fragment() {
         super.onActivityCreated(savedInstanceState)
 
         if (savedInstanceState == null) {
+
+            val prefs = activity?.getSharedPreferences("LoginMetadata", Context.MODE_PRIVATE)
+            val previousEmail = prefs?.getString("email", "")
+
+            emailInput.setText(previousEmail)
+
             loginButton.setOnClickListener {
                 doAsync {
-                    val response = HTTPClient.login(emailInput.text.toString(), passwordInput.text.toString()).execute()
+                    val email = emailInput.text.toString()
+                    val password = passwordInput.text.toString()
+
+                    val response = HTTPClient.login(email, password).execute()
                     val responseBody = response.body()?.string()!!
 
                     if (responseBody.contains("\"/mina-sidor/\"")) {
                         runOnUiThread {
-                            val prefs = activity?.getSharedPreferences("LoginMetadata", Context.MODE_PRIVATE)
-                            prefs?.edit()?.putLong("expiresAt", System.currentTimeMillis() / 1000 + 24 * 60)?.apply() // 24 minutes
+                            val prefsEditable = prefs?.edit()
+
+                            prefsEditable?.putLong("expiresAt", System.currentTimeMillis() / 1000 + 24 * 60) // 24 minutes
+                            prefsEditable?.putString("email", email)
+
+                            prefsEditable?.apply()
+
                             (activity as MainActivity?)?.loadUsageFragment()
                         }
                     } else if (responseBody.contains("login not found")) {
