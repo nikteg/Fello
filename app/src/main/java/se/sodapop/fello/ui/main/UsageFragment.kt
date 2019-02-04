@@ -51,6 +51,7 @@ class UsageFragment : Fragment() {
             }
 
             doAsync {
+                runOnUiThread { usage_loading.visibility = View.VISIBLE }
                 HTTPClient.allSubscriptions().execute()
                 val usage = HTTPClient.usage()
                 val data = HTTPClient.data()
@@ -59,6 +60,8 @@ class UsageFragment : Fragment() {
                 val dataUsed = (dataTotal * 1000 - dataLeft * 1000) / 1000
 
                 runOnUiThread {
+                    usage_loading.visibility = View.GONE
+
                     list.clear()
                     list.add(Pair("Samtal", "${usage.voicecount} st"))
                     list.add(Pair("Samtalsminuter", "${usage.voiceusage} min"))
