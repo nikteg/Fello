@@ -17,7 +17,7 @@ def getVersionNameMinor = { (getVersionName() =~ /\d+/)[1].toInteger() }
 def getVersionNameMajor = { (getVersionName() =~ /\d+/)[0].toInteger() }
 
 private void commitAndSetTag(versionName) {
-    Process addChanges = ['git', 'add', 'app/gradle.properties'].execute(null, project.rootDir)
+    Process addChanges = ['git', 'add', 'gradle.properties'].execute(null, project.rootDir)
     addChanges.waitForProcessOutput(System.out, System.err)
 
     Process createCommit = ['git', 'commit', "-m Release ${versionName}"].execute(null,  project.rootDir)
