@@ -11,15 +11,6 @@ import okhttp3.*
 import okhttp3.logging.HttpLoggingInterceptor
 import org.jetbrains.anko.AnkoLogger
 import org.jetbrains.anko.info
-import java.io.BufferedInputStream
-import java.io.InputStream
-import java.security.KeyStore
-import java.security.cert.CertificateFactory
-import java.security.cert.X509Certificate
-import javax.net.ssl.SSLContext
-import javax.net.ssl.TrustManagerFactory
-import javax.net.ssl.X509TrustManager
-
 
 // {"invdate":"2019-01-01","voiceusage":8,"voicecount":1,"smsusage":0,"mmscount":0,"datapackage":"2 GB","datausage":"0,00"}
 data class Usage(
@@ -95,41 +86,11 @@ object HTTPClient : AnkoLogger {
     }
 
     fun init(context: Context) {
-        /**
-         * Create custom TrustManager with Fello's SSL certificate
-         *
-         * I'm not entirely sure, but I think it has to do that Fello's certificate is issued by a CA
-         * that is not trusted by default in Android.
-         *
-         * See: https://developer.android.com/training/articles/security-ssl#CommonProblems
-         */
-        val cf: CertificateFactory = CertificateFactory.getInstance("X.509")
-        val caInput: InputStream = BufferedInputStream(context.resources.openRawResource(R.raw.fello_se))
-        val ca: X509Certificate = caInput.use {
-            cf.generateCertificate(it) as X509Certificate
-        }
-
-        val keyStoreType = KeyStore.getDefaultType()
-        val keyStore = KeyStore.getInstance(keyStoreType).apply {
-            load(null, null)
-            setCertificateEntry("ca", ca)
-        }
-
-        val tmfAlgorithm: String = TrustManagerFactory.getDefaultAlgorithm()
-        val tmf: TrustManagerFactory = TrustManagerFactory.getInstance(tmfAlgorithm).apply {
-            init(keyStore)
-        }
-
-        val sslContext: SSLContext = SSLContext.getInstance("TLS").apply {
-            init(null, tmf.trustManagers, null)
-        }
-
         client = OkHttpClient().newBuilder()
             .cookieJar(PersistentCookieJar(SetCookieCache(), SharedPrefsCookiePersistor(context)))
             .addInterceptor(HttpLoggingInterceptor().apply {
                 level = if (BuildConfig.DEBUG) HttpLoggingInterceptor.Level.BODY else HttpLoggingInterceptor.Level.NONE
             })
-            .sslSocketFactory(sslContext.socketFactory, tmf.trustManagers[0] as X509TrustManager)
             .build()
 
         if (BuildConfig.DEBUG) {
