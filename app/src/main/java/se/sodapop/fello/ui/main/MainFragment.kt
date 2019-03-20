@@ -63,7 +63,7 @@ class MainFragment : Fragment() {
 
                             (activity as MainActivity?)?.loadUsageFragment()
                         }
-                    } else if (responseBody.contains("login not found")) {
+                    } else if (responseBody.contains("login not found") || responseBody.contains("Fyll i din e-postadress och ditt lösenord")) {
                         runOnUiThread { Toast.makeText(activity, "Felaktig inloggning", Toast.LENGTH_SHORT).show() }
                     }
                 }
